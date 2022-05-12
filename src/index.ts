@@ -1,36 +1,35 @@
+import 'dotenv/config'
 import express from 'express'
-import http from 'http'
 import cors from 'cors'
-import { Server } from 'socket.io'
+import passport from './middleware/passportHandler'
+import router from './router'
+import session from 'express-session'
+import bodyParser from 'body-parser'
 
 const app = express()
 app.use(cors())
 
-const server = http.createServer(app)
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'PATTERN',
+  resave: false,
+  saveUninitialized: true
+}))
 
-const io = new Server(server, {
-  cors: {
-    origin: "*"
-  }
-})
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(express.json());
+
+
+
+//passport
+app.use(passport.initialize())
+app.use(passport.session())
+
+app.use(router)
 
 app.get('/', (req, res) => {
   res.status(200).json({ msg: 'eae men kk' })
 })
 
-io.on('connection', (socket) => {
-  console.log('a user connected')
 
-  socket.on('disconnect', () => {
-    console.log('user disconnected')
-  })
-
-  socket.on('chat message', (data) => {
-    //quando recebe uma mensagem de chat, retransmite pra todo mundo
-    io.emit('chat message', data);
-    console.log('emit:', data)
-  })
-
-})
-
-server.listen(3333)
+app.listen(3333)
